@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Management System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0; /* Light gray background */
+            background-image: url("bg.jpeg"); /* Relative URL to your image */
+            background-size: cover; /* Ensure the background image covers the entire screen */
+            background-position: center; /* Center the background image */
+        }
+
+        .container {
+            max-width: 800px;
+            width: 90%;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s ease;
+        }
+
+        h1, h2 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"], input[type="password"], button, input[type="radio"], input[type="date"], select, input[type="file"] {
+            margin: 10px 0;
+            padding: 12px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        button {
+            cursor: pointer;
+            background-color: #0056b3; /* Blue color */
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        button.logout {
+            background-color: #dc3545;
+        }
+
+        button:hover {
+            background-color: #004080; /* Darker blue on hover */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            font-size: 16px;
+        }
+
+        th:last-child, td:last-child {
+            text-align: center;
+        }
+
+        label {
+            margin-right: 10px;
+        }
+
+        #loginForm {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .login-role {
+            margin-right: 20px;
+        }
+
+        .admin-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .search-bar {
+            padding: 12px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-bar:focus {
+            border-color: #007bff;
+        }
+
+        .error {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .profile-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #fff;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Contact Management System</h1>
+        <div id="loginForm">
+            <div class="login-role">
+                <label for="admin">Admin</label>
+                <input type="radio" id="admin" name="role" value="admin">
+            </div>
+            <div class="login-role">
+                <label for="student">Student</label>
+                <input type="radio" id="student" name="role" value="student">
+            </div>
+            <button onclick="login()">Login</button>
+        </div>
+        <div id="studentPanel" style="display: none;">
+            <h2>Welcome, Student!</h2>
+            <input type="file" id="image" accept="image/*">
+            <input type="text" id="name" placeholder="Name">
+            <span class="error" id="nameError"></span>
+            <input type="date" id="dob" placeholder="Date of Birth">
+            <span class="error" id="dobError"></span>
+            <select id="gender">
+                <option value="" selected disabled>Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Others">Others</option>
+            </select>
+            <span class="error" id="genderError"></span>
+            <input type="text" id="email" placeholder="Email (must contain @gmail.com)">
+            <span class="error" id="emailError"></span>
+            <input type="text" id="contact" placeholder="Contact No (10 digits)">
+            <span class="error" id="contactError"></span>
+            <button onclick="addContact()">Add Contact</button>
+            <button class="logout" onclick="logout()">Logout</button>
+            <button onclick="generateVCard()">Generate VCard</button>
+        </div>
+        <div id="adminPanel" style="display: none;">
+            <h2>Welcome, Admin!</h2>
+            <button class="logout" onclick="logout()">Logout</button>
+            <div class="admin-actions">
+                <input type="text" id="search" class="search-bar" placeholder="Search contacts...">
+            </div>
+            <table id="contactTable">
+                <thead>
+                    <tr>
+                        <th>Profile Image</th>
+                        <th>Name</th>
+                        <th>Date of Birth</th>
+                        <th>Age</th>
+                        <th>Gender</th>
+                        <th>Email</th>
+                        <th>Contact</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="contactList"></tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        let currentUser = null;
+
+        function login() {
+            const role = document.querySelector('input[name="role"]:checked').value;
+
+            if (role === "admin") {
+                const username = prompt("Enter username:");
+                const password = prompt("Enter password:");
+
+                // Simulated authentication (replace with your actual authentication logic)
+                if (username === "admin" && password === "admin") {
+                    currentUser = "admin";
+                    document.getElementById("loginForm").style.display = "none";
+                    document.getElementById("adminPanel").style.display = "block";
+                    viewContacts();
+                } else {
+                    alert("Invalid username or password");
+                }
+            } else if (role === "student") {
+                currentUser = "student";
+                document.getElementById("loginForm").style.display = "none";
+                document.getElementById("studentPanel").style.display = "block";
+            } else {
+                alert("Please select a role");
+            }
+        }
+
+        function addContact() {
+            if (currentUser === "student") {
+                const name = document.getElementById("name").value;
+                const dob = document.getElementById("dob").value;
+                const gender = document.getElementById("gender").value;
+                const email = document.getElementById("email").value;
+                const contact = document.getElementById("contact").value;
+                const image = document.getElementById("image").files[0];
+
+                let valid = true;
+
+                // Validate name
+                if (!name) {
+                    document.getElementById("nameError").innerText = "Name is required";
+                    valid = false;
+                } else {
+                    document.getElementById("nameError").innerText = "";
+                }
+
+                // Validate dob
+                if (!dob) {
+                    document.getElementById("dobError").innerText = "Date of Birth is required";
+                    valid = false;
+                } else {
+                    document.getElementById("dobError").innerText = "";
+                }
+
+                // Calculate age
+                const dobDate = new Date(dob);
+                const today = new Date();
+                const age = Math.floor((today - dobDate) / (365.25 * 24 * 60 * 60 * 1000));
+
+                // Validate age
+                if (!age) {
+                    document.getElementById("dobError").innerText = "Invalid Date of Birth";
+                    valid = false;
+                } else if (age < 0 || age > 150) {
+                    document.getElementById("dobError").innerText = "Age must be realistic";
+                    valid = false;
+                } else {
+                    document.getElementById("dobError").innerText = "";
+                }
+
+                // Validate gender
+                if (!gender) {
+                    document.getElementById("genderError").innerText = "Gender is required";
+                    valid = false;
+                } else {
+                    document.getElementById("genderError").innerText = "";
+                }
+
+                // Validate email
+                if (!email) {
+                    document.getElementById("emailError").innerText = "Email is required";
+                    valid = false;
+                } else if (!email.endsWith("@gmail.com")) {
+                    document.getElementById("emailError").innerText = "Email must be Gmail";
+                    valid = false;
+                } else {
+                    document.getElementById("emailError").innerText = "";
+                }
+
+                // Validate contact
+                if (!contact) {
+                    document.getElementById("contactError").innerText = "Contact is required";
+                    valid = false;
+                } else if (isNaN(contact) || contact.length !== 10) {
+                    document.getElementById("contactError").innerText = "Contact must be a 10-digit number";
+                    valid = false;
+                } else {
+                    document.getElementById("contactError").innerText = "";
+                }
+
+                if (valid) {
+                    const studentData = JSON.parse(localStorage.getItem("studentData")) || [];
+                    studentData.push({ name, dob, age, gender, email, contact, image: URL.createObjectURL(image) });
+                    localStorage.setItem("studentData", JSON.stringify(studentData));
+                    alert("Contact added successfully");
+                    viewContacts();
+                }
+            } else {
+                alert("Only students can add contacts");
+            }
+        }
+
+        function viewContacts() {
+            if (currentUser === "admin") {
+                const studentData = JSON.parse(localStorage.getItem("studentData")) || [];
+                displayContacts(studentData);
+            } else {
+                alert("Only admins can view contacts");
+            }
+        }
+
+        function displayContacts(contactsToDisplay) {
+            const contactList = document.getElementById("contactList");
+            contactList.innerHTML = "";
+            contactsToDisplay.forEach((contact, index) => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><img src="${contact.image}" alt="Profile" class="profile-img"></td>
+                    <td>${contact.name}</td>
+                    <td>${contact.dob}</td>
+                    <td>${contact.age}</td>
+                    <td>${contact.gender}</td>
+                    <td>${contact.email}</td>
+                    <td>${contact.contact}</td>
+                    <td>
+                        <button onclick="updateContact(${index})">Update</button>
+                        <button onclick="deleteContact(${index})">Delete</button>
+                    </td>
+                `;
+                contactList.appendChild(tr);
+            });
+        }
+
+        function updateContact(index) {
+            const studentData = JSON.parse(localStorage.getItem("studentData")) || [];
+            const contact = studentData[index];
+            const newName = prompt("Enter new name:", contact.name);
+            const newDob = prompt("Enter new Date of Birth (YYYY-MM-DD):", contact.dob);
+            const newGender = prompt("Enter new gender:", contact.gender);
+            const newEmail = prompt("Enter new email:", contact.email);
+            const newContact = prompt("Enter new contact:", contact.contact);
+
+            if (newName && newDob && newGender && newEmail && newContact) {
+                // Recalculate age based on new date of birth
+                const dobDate = new Date(newDob);
+                const today = new Date();
+                const newAge = Math.floor((today - dobDate) / (365.25 * 24 * 60 * 60 * 1000));
+
+                studentData[index] = { name: newName, dob: newDob, age: newAge, gender: newGender, email: newEmail, contact: newContact, image: contact.image };
+                localStorage.setItem("studentData", JSON.stringify(studentData));
+                viewContacts();
+                alert("Contact updated successfully");
+            } else {
+                alert("Please fill in all fields");
+            }
+        }
+
+        function deleteContact(index) {
+            const confirmDelete = confirm("Are you sure you want to delete this contact?");
+            if (confirmDelete) {
+                const studentData = JSON.parse(localStorage.getItem("studentData")) || [];
+                studentData.splice(index, 1);
+                localStorage.setItem("studentData", JSON.stringify(studentData));
+                viewContacts();
+                alert("Contact deleted successfully");
+            }
+        }
+
+        document.getElementById("search").addEventListener("input", function() {
+            const searchTerm = this.value.toLowerCase();
+            const studentData = JSON.parse(localStorage.getItem("studentData")) || [];
+            const filteredContacts = studentData.filter(contact => {
+                return Object.values(contact).some(value =>
+                    value.toString().toLowerCase().includes(searchTerm)
+                );
+            });
+            displayContacts(filteredContacts);
+        });
+
+        function generateVCard() {
+            if (currentUser === "student") {
+                const name = document.getElementById("name").value;
+                const dob = document.getElementById("dob").value;
+                const gender = document.getElementById("gender").value;
+                const email = document.getElementById("email").value;
+                const contact = document.getElementById("contact").value;
+
+                // Construct VCard content
+                const vcardContent = `BEGIN:VCARD
+VERSION:3.0
+FN:${name}
+N:${name};;;
+EMAIL;TYPE=INTERNET:${email}
+TEL;TYPE=CELL:${contact}
+BDAY:${dob}
+GENDER:${gender}
+END:VCARD`;
+
+                // Create a Blob containing the VCard content
+                const blob = new Blob([vcardContent], { type: "text/vcard" });
+
+                // Create a temporary URL for the Blob
+                const url = window.URL.createObjectURL(blob);
+
+                // Create a link element
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${name}_contact.vcf`; // Set the filename
+                a.click();
+
+                // Clean up
+                window.URL.revokeObjectURL(url);
+            } else {
+                alert("Only students can generate VCards");
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById("adminPanel").style.display = "none";
+            document.getElementById("studentPanel").style.display = "none";
+            document.getElementById("loginForm").style.display = "flex";
+        }
+    </script>
+</body>
+</html>
